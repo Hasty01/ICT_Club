@@ -415,8 +415,34 @@ const AuthPage = () => {
 
 const DashboardPage = () => {
   const { authState } = useAuth();
+  const [stats, setStats] = useState({
+    events: 0,
+    projects: 0,
+    users: 0,
+    rank: 'B-04'
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/events').then(res => res.json()),
+      fetch('/api/projects').then(res => res.json()),
+      fetch('/api/users').then(res => res.json())
+    ]).then(([events, projects, users]) => {
+      setStats({
+        events: events.length,
+        projects: projects.length,
+        users: users.length,
+        rank: authState.user?.role === UserRole.ADMIN ? 'S-01' : 'B-04'
+      });
+      setLoading(false);
+    });
+  }, [authState.user]);
+
   const user = authState.user;
   if (!user) return null;
+  if (loading) return <div className="p-12 text-center font-mono animate-pulse">Synchronizing Terminal...</div>;
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
           <section className="bg-navy-950 dark:bg-navy-900 rounded-3xl p-8 text-white relative overflow-hidden shadow-2xl border-l-8 border-amber-500 tech-grid">
@@ -425,7 +451,7 @@ const DashboardPage = () => {
                 Status: Connection Stable
               </div>
           <h2 className="text-4xl font-black tracking-tighter uppercase">Greetings, Engineer {user.full_name.split(' ')[0]}</h2>
-          <p className="text-cyan-100/70 text-base font-mono max-w-2xl">Terminal synchronized. You have 3 pending event approvals and 2 high-priority project tasks assigned.</p>
+          <p className="text-cyan-100/70 text-base font-mono max-w-2xl">Terminal synchronized. You have {stats.events} active events and {stats.projects} projects currently in your sector.</p>
           <div className="pt-2">
             <Link to="/events">
               <Button variant="secondary" size="md" className="gap-2">
@@ -441,10 +467,10 @@ const DashboardPage = () => {
       </section>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 font-mono">
         {[
-          { label: 'Active Events', value: '03', icon: Calendar, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-          { label: 'Node Projects', value: '02', icon: Briefcase, color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
-          { label: 'Registry Count', value: '154', icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-          { label: 'System Rank', value: 'B-04', icon: Shield, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+          { label: 'Active Events', value: stats.events.toString().padStart(2, '0'), icon: Calendar, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+          { label: 'Node Projects', value: stats.projects.toString().padStart(2, '0'), icon: Briefcase, color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
+          { label: 'Registry Count', value: stats.users.toString(), icon: Users, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
+          { label: 'System Rank', value: stats.rank, icon: Shield, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
         ].map((stat, i) => (
           <Card key={i} className="p-6 group border-b-2 border-b-transparent hover:border-b-cyan-500 transition-all rounded-3xl">
             <div className="flex items-center justify-between mb-4">
@@ -724,11 +750,20 @@ const ProfilePage = () => {
 
 const EventsPage = () => {
   const { authState } = useAuth();
-  const [events] = useState([
-    { id: 1, title: 'AI Ethics Symposium', date: 'Nov 24, 2024', time: '14:00', loc: 'Node 2C', img: 'https://picsum.photos/seed/ai1/400/200', registered: false },
-    { id: 2, title: 'Web3 Core Dev Meet', date: 'Dec 02, 2024', time: '17:30', loc: 'Mainframe', img: 'https://picsum.photos/seed/web3-2/400/200', registered: true },
-    { id: 3, title: 'Security Audit Workshop', date: 'Dec 10, 2024', time: '13:00', loc: 'Lab Zero', img: 'https://picsum.photos/seed/sec/400/200', registered: false },
-  ]);
+  const [events, setEvents] = useState<ClubEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/events')
+      .then(res => res.json())
+      .then(data => {
+        setEvents(data);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="p-12 text-center font-mono animate-pulse">Accessing Event Registry...</div>;
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -747,22 +782,21 @@ const EventsPage = () => {
         {events.map((event) => (
           <Card key={event.id} className="group overflow-hidden border-b-4 border-b-transparent hover:border-b-amber-500">
             <div className="h-44 overflow-hidden relative">
-              <img src={event.img} className="w-full h-full object-cover grayscale brightness-75 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" />
+              <img src={event.image_url || `https://picsum.photos/seed/${event.id}/400/200`} className="w-full h-full object-cover grayscale brightness-75 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" alt={event.title} referrerPolicy="no-referrer" />
               <div className="absolute inset-0 bg-navy-950/30"></div>
-              <div className="absolute top-4 right-4">{event.registered && <Badge variant="gold">Signed</Badge>}</div>
             </div>
             <div className="p-6 space-y-4 bg-white dark:bg-navy-900 transition-colors">
               <h3 className="text-lg font-black text-navy-950 dark:text-white uppercase tracking-tight">{event.title}</h3>
               <div className="space-y-2 text-[10px] text-slate-500 dark:text-slate-400 font-black font-mono uppercase tracking-widest">
-                <p className="flex items-center gap-2"><Calendar size={14} className="text-cyan-600" /> {event.date}</p>
-                <p className="flex items-center gap-2"><Clock size={14} className="text-cyan-600" /> {event.time} HRS</p>
-                <p className="flex items-center gap-2"><Users size={14} className="text-cyan-600" /> {event.loc}</p>
+                <p className="flex items-center gap-2"><Calendar size={14} className="text-cyan-600" /> {new Date(event.date).toLocaleDateString()}</p>
+                <p className="flex items-center gap-2"><Clock size={14} className="text-cyan-600" /> {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} HRS</p>
+                <p className="flex items-center gap-2"><Users size={14} className="text-cyan-600" /> {event.location}</p>
               </div>
               <Button 
-                variant={event.registered ? "outline" : "primary"} 
+                variant="primary" 
                 className="w-full uppercase text-[10px] tracking-widest font-black"
               >
-                {event.registered ? 'Terminate Registration' : 'Register Deployment'}
+                Register Deployment
               </Button>
             </div>
           </Card>
@@ -774,7 +808,9 @@ const EventsPage = () => {
 
 const ProjectsPage = () => {
   const { authState } = useAuth();
-  const [projects, setProjects] = useState<Project[]>(MOCK_PROJECTS);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newProject, setNewProject] = useState({
     title: '',
@@ -783,10 +819,20 @@ const ProjectsPage = () => {
     lead_id: authState.user?.id || ''
   });
 
-  const handleCreateProject = (e: React.FormEvent) => {
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/projects').then(res => res.json()),
+      fetch('/api/users').then(res => res.json())
+    ]).then(([projectsData, usersData]) => {
+      setProjects(projectsData);
+      setUsers(usersData);
+      setLoading(false);
+    });
+  }, []);
+
+  const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    const project: Project = {
-      id: `p${Date.now()}`,
+    const project = {
       title: newProject.title,
       description: newProject.description,
       tech_stack: newProject.tech_stack.split(',').map(s => s.trim()).filter(s => s !== ''),
@@ -795,10 +841,23 @@ const ProjectsPage = () => {
       created_at: new Date().toISOString().split('T')[0],
       members: [newProject.lead_id]
     };
-    setProjects([project, ...projects]);
-    setShowCreateForm(false);
-    setNewProject({ title: '', description: '', tech_stack: '', lead_id: authState.user?.id || '' });
+
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(project)
+      });
+      const saved = await res.json();
+      setProjects([saved, ...projects]);
+      setShowCreateForm(false);
+      setNewProject({ title: '', description: '', tech_stack: '', lead_id: authState.user?.id || '' });
+    } catch (err) {
+      alert("Failed to initialize project");
+    }
   };
+
+  if (loading) return <div className="p-12 text-center font-mono animate-pulse">Scanning Project Nodes...</div>;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -834,7 +893,7 @@ const ProjectsPage = () => {
                   value={newProject.lead_id}
                   onChange={(e) => setNewProject({...newProject, lead_id: e.target.value})}
                 >
-                  {MOCK_USERS.map(u => (
+                  {users.map(u => (
                     <option key={u.id} value={u.id}>{u.full_name}</option>
                   ))}
                 </select>
@@ -864,7 +923,7 @@ const ProjectsPage = () => {
 
       <div className="grid md:grid-cols-2 gap-6">
         {projects.map((project) => {
-          const lead = MOCK_USERS.find(u => u.id === project.lead_id);
+          const lead = users.find(u => u.id === project.lead_id);
           return (
             <Card key={project.id} className="p-6 flex flex-col justify-between border-l-4 border-l-cyan-600">
               <div className="space-y-4">
@@ -965,7 +1024,9 @@ const ChallengesPage = () => {
 
 const ResourcesPage = () => {
   const { authState } = useAuth();
-  const [resources, setResources] = useState<Resource[]>(MOCK_RESOURCES);
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -977,7 +1038,18 @@ const ResourcesPage = () => {
     file_type: 'link' as const
   });
 
-  const categories = ['All', ...Array.from(new Set(MOCK_RESOURCES.map(r => r.category)))];
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/resources').then(res => res.json()),
+      fetch('/api/users').then(res => res.json())
+    ]).then(([resourcesData, usersData]) => {
+      setResources(resourcesData);
+      setUsers(usersData);
+      setLoading(false);
+    });
+  }, []);
+
+  const categories = ['All', ...Array.from(new Set(resources.map(r => r.category)))];
 
   const filteredResources = useMemo(() => {
     return resources.filter(resource => {
@@ -988,10 +1060,9 @@ const ResourcesPage = () => {
     });
   }, [resources, searchTerm, selectedCategory]);
 
-  const handleAddResource = (e: React.FormEvent) => {
+  const handleAddResource = async (e: React.FormEvent) => {
     e.preventDefault();
-    const resource: Resource = {
-      id: `r${Date.now()}`,
+    const resource = {
       title: newResource.title,
       description: newResource.description,
       category: newResource.category,
@@ -1000,10 +1071,23 @@ const ResourcesPage = () => {
       uploaded_by: authState.user?.id || 'unknown',
       created_at: new Date().toISOString().split('T')[0]
     };
-    setResources([resource, ...resources]);
-    setShowAddForm(false);
-    setNewResource({ title: '', description: '', category: 'Development', file_url: '', file_type: 'link' });
+
+    try {
+      const res = await fetch('/api/resources', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(resource)
+      });
+      const saved = await res.json();
+      setResources([saved, ...resources]);
+      setShowAddForm(false);
+      setNewResource({ title: '', description: '', category: 'Development', file_url: '', file_type: 'link' });
+    } catch (err) {
+      alert("Failed to inject resource");
+    }
   };
+
+  if (loading) return <div className="p-12 text-center font-mono animate-pulse">Accessing Neural Library...</div>;
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -1111,7 +1195,7 @@ const ResourcesPage = () => {
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredResources.map((resource) => {
-          const uploader = MOCK_USERS.find(u => u.id === resource.uploaded_by);
+          const uploader = users.find(u => u.id === resource.uploaded_by);
           return (
             <Card key={resource.id} className="group hover:border-cyan-500 transition-all duration-300 flex flex-col">
               <div className="p-6 flex-1 space-y-4">

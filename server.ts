@@ -112,8 +112,40 @@ async function startServer() {
     }
   ];
 
+  let resources = [
+    {
+      id: 'r1',
+      title: 'Introduction to Git',
+      description: 'A comprehensive guide for beginners to start with version control.',
+      category: 'Workshops',
+      file_url: 'https://www.example.com/git-guide.pdf',
+      file_type: 'pdf',
+      uploaded_by: '1',
+      created_at: '2024-01-20'
+    },
+    {
+      id: 'r2',
+      title: 'React Performance Tips',
+      description: 'Masterclass video on optimizing React applications.',
+      category: 'Development',
+      file_url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      file_type: 'video',
+      uploaded_by: '2',
+      created_at: '2024-06-12'
+    }
+  ];
+
   // API Routes
   app.get("/api/users", (req, res) => res.json(users));
+  app.put("/api/users/:id", (req, res) => {
+    const index = users.findIndex(u => u.id === req.params.id);
+    if (index !== -1) {
+      users[index] = { ...users[index], ...req.body };
+      res.json(users[index]);
+    } else {
+      res.status(404).json({ error: "User not found" });
+    }
+  });
   app.delete("/api/users/:id", (req, res) => {
     users = users.filter(u => u.id !== req.params.id);
     res.json({ success: true });
@@ -124,16 +156,6 @@ async function startServer() {
     if (user) {
       user.rating = rating;
       res.json(user);
-    } else {
-      res.status(404).json({ error: "User not found" });
-    }
-  });
-
-  app.put("/api/users/:id", (req, res) => {
-    const index = users.findIndex(u => u.id === req.params.id);
-    if (index !== -1) {
-      users[index] = { ...users[index], ...req.body };
-      res.json(users[index]);
     } else {
       res.status(404).json({ error: "User not found" });
     }
@@ -176,6 +198,17 @@ async function startServer() {
     const newChallenge = { id: `c${Date.now()}`, ...req.body };
     challenges.push(newChallenge);
     res.json(newChallenge);
+  });
+
+  app.get("/api/resources", (req, res) => res.json(resources));
+  app.post("/api/resources", (req, res) => {
+    const newResource = { id: `r${Date.now()}`, ...req.body };
+    resources.push(newResource);
+    res.json(newResource);
+  });
+  app.delete("/api/resources/:id", (req, res) => {
+    resources = resources.filter(r => r.id !== req.params.id);
+    res.json({ success: true });
   });
 
   // Vite middleware for development
