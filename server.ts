@@ -8,7 +8,8 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(cors());
-  app.use(bodyParser.json());
+  app.use(bodyParser.json({ limit: '10mb' }));
+  app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
   // In-memory data for demo purposes (real backend would use a database)
   let users = [

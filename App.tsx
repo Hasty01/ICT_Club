@@ -555,6 +555,17 @@ const ProfilePage = () => {
     setProfileData({ ...profileData, skills: profileData.skills?.filter(s => s !== skill) } as any);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileData({ ...profileData, avatar_url: reader.result as string } as any);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto animate-in fade-in duration-500">
       <Card className="mb-8 border-none overflow-hidden shadow-2xl">
@@ -567,16 +578,16 @@ const ProfilePage = () => {
                 className="w-32 h-32 rounded-3xl border-4 border-white dark:border-navy-900 shadow-2xl bg-white object-cover"
               />
               {isEditing && (
-                <div className="absolute inset-0 bg-navy-950/60 text-white flex flex-col items-center justify-center transition-opacity rounded-3xl p-2">
-                  <p className="text-[8px] font-black uppercase mb-1">Avatar URL</p>
+                <label className="absolute inset-0 bg-navy-950/60 text-white flex flex-col items-center justify-center transition-opacity rounded-3xl p-2 cursor-pointer group-hover:opacity-100 opacity-0">
+                  <Cpu size={24} className="mb-2 animate-pulse" />
+                  <p className="text-[10px] font-black uppercase text-center">Upload New Bio-Metric Image</p>
                   <input 
-                    type="text"
-                    className="w-full bg-navy-900/50 border border-white/20 rounded px-1 py-0.5 text-[8px] font-mono outline-none"
-                    value={profileData.avatar_url || ''}
-                    onChange={(e) => setProfileData({...profileData, avatar_url: e.target.value} as any)}
-                    placeholder="https://..."
+                    type="file"
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
                   />
-                </div>
+                </label>
               )}
             </div>
           </div>
