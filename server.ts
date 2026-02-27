@@ -61,7 +61,8 @@ async function startServer() {
       image_url: 'https://picsum.photos/seed/web/800/400',
       created_by: '1',
       attendee_count: 45,
-      max_attendees: 60
+      max_attendees: 60,
+      attendees: ['1', '2']
     },
     {
       id: 'e2',
@@ -72,7 +73,20 @@ async function startServer() {
       image_url: 'https://picsum.photos/seed/hack/800/400',
       created_by: '2',
       attendee_count: 12,
-      max_attendees: 100
+      max_attendees: 100,
+      attendees: ['2']
+    },
+    {
+      id: 'e3',
+      title: 'AI Ethics Symposium',
+      description: 'A deep dive into the ethical implications of large language models.',
+      date: '2024-11-24T14:00:00',
+      location: 'Node 2C',
+      image_url: 'https://picsum.photos/seed/ai1/800/400',
+      created_by: '1',
+      attendee_count: 30,
+      max_attendees: 50,
+      attendees: []
     }
   ];
 
@@ -96,6 +110,16 @@ async function startServer() {
       lead_id: '2',
       created_at: '2024-05-15',
       members: ['2']
+    },
+    {
+      id: 'p3',
+      title: 'Autonomous Drone Swarm',
+      description: 'Collaborative effort in developing localized swarm intelligence for monitoring.',
+      tech_stack: ['Python', 'ROS', 'C++'],
+      status: 'active',
+      lead_id: '1',
+      created_at: '2024-08-10',
+      members: ['1']
     }
   ];
 
@@ -108,7 +132,19 @@ async function startServer() {
       points: 50,
       deadline: '2024-12-01',
       created_at: '2024-11-01',
-      created_by: '1'
+      created_by: '1',
+      participants: ['1']
+    },
+    {
+      id: 'c2',
+      title: 'CSS Art Challenge',
+      description: 'Create a realistic looking robot using only CSS shapes and gradients.',
+      difficulty: 'hard',
+      points: 100,
+      deadline: '2024-12-15',
+      created_at: '2024-11-10',
+      created_by: '2',
+      participants: []
     }
   ];
 
@@ -132,6 +168,16 @@ async function startServer() {
       file_type: 'video',
       uploaded_by: '2',
       created_at: '2024-06-12'
+    },
+    {
+      id: 'r3',
+      title: 'Kubernetes Orchestration 101',
+      description: 'Master the art of containerization and cluster management for high availability systems.',
+      category: 'Development',
+      file_url: 'https://kubernetes.io/docs/home/',
+      file_type: 'link',
+      uploaded_by: '1',
+      created_at: '2024-09-05'
     }
   ];
 
@@ -163,15 +209,20 @@ async function startServer() {
 
   app.get("/api/events", (req, res) => res.json(events));
   app.post("/api/events", (req, res) => {
-    const newEvent = { id: `e${Date.now()}`, ...req.body };
+    const newEvent = { id: `e${Date.now()}`, attendees: [], attendee_count: 0, ...req.body };
     events.push(newEvent);
     res.json(newEvent);
   });
-  app.put("/api/events/:id", (req, res) => {
-    const index = events.findIndex(e => e.id === req.params.id);
-    if (index !== -1) {
-      events[index] = { ...events[index], ...req.body };
-      res.json(events[index]);
+  app.post("/api/events/:id/register", (req, res) => {
+    const { userId } = req.body;
+    const event = events.find(e => e.id === req.params.id);
+    if (event) {
+      if (!event.attendees) event.attendees = [];
+      if (!event.attendees.includes(userId)) {
+        event.attendees.push(userId);
+        event.attendee_count = (event.attendee_count || 0) + 1;
+      }
+      res.json(event);
     } else {
       res.status(404).json({ error: "Event not found" });
     }
@@ -179,15 +230,18 @@ async function startServer() {
 
   app.get("/api/projects", (req, res) => res.json(projects));
   app.post("/api/projects", (req, res) => {
-    const newProject = { id: `p${Date.now()}`, ...req.body };
+    const newProject = { id: `p${Date.now()}`, members: [req.body.lead_id], ...req.body };
     projects.push(newProject);
     res.json(newProject);
   });
-  app.put("/api/projects/:id", (req, res) => {
-    const index = projects.findIndex(p => p.id === req.params.id);
-    if (index !== -1) {
-      projects[index] = { ...projects[index], ...req.body };
-      res.json(projects[index]);
+  app.post("/api/projects/:id/join", (req, res) => {
+    const { userId } = req.body;
+    const project = projects.find(p => p.id === req.params.id);
+    if (project) {
+      if (!project.members.includes(userId)) {
+        project.members.push(userId);
+      }
+      res.json(project);
     } else {
       res.status(404).json({ error: "Project not found" });
     }
@@ -195,9 +249,22 @@ async function startServer() {
 
   app.get("/api/challenges", (req, res) => res.json(challenges));
   app.post("/api/challenges", (req, res) => {
-    const newChallenge = { id: `c${Date.now()}`, ...req.body };
+    const newChallenge = { id: `c${Date.now()}`, participants: [], ...req.body };
     challenges.push(newChallenge);
     res.json(newChallenge);
+  });
+  app.post("/api/challenges/:id/accept", (req, res) => {
+    const { userId } = req.body;
+    const challenge = challenges.find(c => c.id === req.params.id);
+    if (challenge) {
+      if (!challenge.participants) challenge.participants = [];
+      if (!challenge.participants.includes(userId)) {
+        challenge.participants.push(userId);
+      }
+      res.json(challenge);
+    } else {
+      res.status(404).json({ error: "Challenge not found" });
+    }
   });
 
   app.get("/api/resources", (req, res) => res.json(resources));

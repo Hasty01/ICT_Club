@@ -256,6 +256,20 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 // --- Pages ---
 
 const LandingPage = () => {
+  const [previews, setPreviews] = useState<{ events: ClubEvent[], projects: Project[] }>({ events: [], projects: [] });
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/events').then(res => res.json()),
+      fetch('/api/projects').then(res => res.json())
+    ]).then(([events, projects]) => {
+      setPreviews({ 
+        events: Array.isArray(events) ? events.slice(0, 3) : [], 
+        projects: Array.isArray(projects) ? projects.slice(0, 3) : [] 
+      });
+    }).catch(err => console.error("Preview fetch error:", err));
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-navy-950 overflow-x-hidden transition-colors duration-500">
       <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-navy-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
@@ -312,32 +326,67 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
-      <section id="about" className="py-24 px-6 bg-white dark:bg-navy-900 transition-colors">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row gap-12 items-center">
-            <div className="flex-1 space-y-6">
-              <div className="w-12 h-1 bg-cyan-600"></div>
-              <h2 className="text-4xl font-black text-navy-950 dark:text-white uppercase tracking-tighter">The Research Hub</h2>
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                Our Research Hub is the central nervous system of STAHIZA ICT HUB. It houses a vast library of technical documentation, research papers, and workshop materials curated by our elite members.
-              </p>
-              <div className="grid grid-cols-2 gap-4 pt-4">
-                <div className="p-4 border border-slate-100 dark:border-slate-800 rounded-2xl">
-                  <FileText className="text-cyan-600 mb-2" size={24} />
-                  <h4 className="font-black text-navy-950 dark:text-white text-xs uppercase tracking-widest">Documentation</h4>
-                  <p className="text-[10px] text-slate-500 mt-1">Deep dives into modern architectures.</p>
+      <section id="events" className="py-20 px-6 bg-white dark:bg-navy-900 transition-colors">
+        <div className="max-w-7xl mx-auto space-y-12">
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl font-black text-navy-950 dark:text-white uppercase tracking-tighter">Upcoming Operations</h2>
+            <p className="text-slate-500 font-mono text-xs uppercase tracking-[0.3em]">Synchronized Global Event Registry</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {previews.events.map(event => (
+              <Card key={event.id} className="group overflow-hidden">
+                <div className="h-48 overflow-hidden relative">
+                  <img src={event.image_url} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-500" alt="" referrerPolicy="no-referrer" />
+                  <div className="absolute inset-0 bg-navy-950/20"></div>
                 </div>
-                <div className="p-4 border border-slate-100 dark:border-slate-800 rounded-2xl">
-                  <BookOpen className="text-amber-500 mb-2" size={24} />
-                  <h4 className="font-black text-navy-950 dark:text-white text-xs uppercase tracking-widest">Case Studies</h4>
-                  <p className="text-[10px] text-slate-500 mt-1">Real-world system implementations.</p>
+                <div className="p-6 space-y-4">
+                  <h3 className="text-xl font-black text-navy-950 dark:text-white uppercase tracking-tight">{event.title}</h3>
+                  <div className="flex items-center gap-4 text-[10px] font-black uppercase font-mono text-slate-500">
+                    <span className="flex items-center gap-1"><Calendar size={14} /> {new Date(event.date).toLocaleDateString()}</span>
+                    <span className="flex items-center gap-1"><Users size={14} /> {event.attendee_count} Signed</span>
+                  </div>
                 </div>
-              </div>
+              </Card>
+            ))}
+          </div>
+          <div className="text-center pt-8">
+            <Link to="/auth">
+              <Button variant="outline" size="lg" className="uppercase tracking-widest">View All Operations</Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      <section id="projects" className="py-20 px-6 tech-grid">
+        <div className="max-w-7xl mx-auto space-y-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-4">
+              <h2 className="text-4xl font-black text-navy-950 dark:text-white uppercase tracking-tighter">Active Initiatives</h2>
+              <p className="text-slate-500 font-mono text-xs uppercase tracking-[0.3em]">Technical Node Registry</p>
             </div>
-            <div className="flex-1 grid grid-cols-2 gap-4">
-              <img src="https://picsum.photos/seed/research1/400/400" className="rounded-2xl grayscale hover:grayscale-0 transition-all" alt="Research" referrerPolicy="no-referrer" />
-              <img src="https://picsum.photos/seed/research2/400/400" className="rounded-2xl grayscale hover:grayscale-0 transition-all mt-8" alt="Research" referrerPolicy="no-referrer" />
-            </div>
+            <Link to="/auth">
+              <Button variant="secondary" className="gap-2">Initialize Project <Plus size={16} /></Button>
+            </Link>
+          </div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {previews.projects.map(project => (
+              <Card key={project.id} className="p-8 border-l-4 border-l-amber-500 bg-white dark:bg-navy-950/50">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-start">
+                    <h3 className="text-xl font-black text-navy-950 dark:text-white uppercase tracking-tight">{project.title}</h3>
+                    <Badge variant="gold">{project.status}</Badge>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-400 font-medium line-clamp-3">{project.description}</p>
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {project.tech_stack.slice(0, 3).map(tech => (
+                      <span key={tech} className="px-2 py-0.5 bg-slate-100 dark:bg-navy-800 text-slate-500 dark:text-slate-400 text-[9px] font-black uppercase font-mono border border-slate-200 dark:border-slate-800">
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -762,6 +811,21 @@ const EventsPage = () => {
       });
   }, []);
 
+  const handleRegister = async (eventId: string) => {
+    if (!authState.user) return;
+    try {
+      const res = await fetch(`/api/events/${eventId}/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: authState.user.id })
+      });
+      const updatedEvent = await res.json();
+      setEvents(events.map(e => e.id === eventId ? updatedEvent : e));
+    } catch (err) {
+      alert("Registration failed");
+    }
+  };
+
   if (loading) return <div className="p-12 text-center font-mono animate-pulse">Accessing Event Registry...</div>;
 
   return (
@@ -779,28 +843,34 @@ const EventsPage = () => {
         )}
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {events.map((event) => (
-          <Card key={event.id} className="group overflow-hidden border-b-4 border-b-transparent hover:border-b-amber-500">
-            <div className="h-44 overflow-hidden relative">
-              <img src={event.image_url || `https://picsum.photos/seed/${event.id}/400/200`} className="w-full h-full object-cover grayscale brightness-75 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" alt={event.title} referrerPolicy="no-referrer" />
-              <div className="absolute inset-0 bg-navy-950/30"></div>
-            </div>
-            <div className="p-6 space-y-4 bg-white dark:bg-navy-900 transition-colors">
-              <h3 className="text-lg font-black text-navy-950 dark:text-white uppercase tracking-tight">{event.title}</h3>
-              <div className="space-y-2 text-[10px] text-slate-500 dark:text-slate-400 font-black font-mono uppercase tracking-widest">
-                <p className="flex items-center gap-2"><Calendar size={14} className="text-cyan-600" /> {new Date(event.date).toLocaleDateString()}</p>
-                <p className="flex items-center gap-2"><Clock size={14} className="text-cyan-600" /> {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} HRS</p>
-                <p className="flex items-center gap-2"><Users size={14} className="text-cyan-600" /> {event.location}</p>
+        {events.map((event) => {
+          const isRegistered = event.attendees?.includes(authState.user?.id || '');
+          return (
+            <Card key={event.id} className="group overflow-hidden border-b-4 border-b-transparent hover:border-b-amber-500">
+              <div className="h-44 overflow-hidden relative">
+                <img src={event.image_url || `https://picsum.photos/seed/${event.id}/400/200`} className="w-full h-full object-cover grayscale brightness-75 group-hover:grayscale-0 group-hover:scale-110 transition-all duration-700" alt={event.title} referrerPolicy="no-referrer" />
+                <div className="absolute inset-0 bg-navy-950/30"></div>
+                {isRegistered && <div className="absolute top-4 right-4"><Badge variant="gold">Signed</Badge></div>}
               </div>
-              <Button 
-                variant="primary" 
-                className="w-full uppercase text-[10px] tracking-widest font-black"
-              >
-                Register Deployment
-              </Button>
-            </div>
-          </Card>
-        ))}
+              <div className="p-6 space-y-4 bg-white dark:bg-navy-900 transition-colors">
+                <h3 className="text-lg font-black text-navy-950 dark:text-white uppercase tracking-tight">{event.title}</h3>
+                <div className="space-y-2 text-[10px] text-slate-500 dark:text-slate-400 font-black font-mono uppercase tracking-widest">
+                  <p className="flex items-center gap-2"><Calendar size={14} className="text-cyan-600" /> {new Date(event.date).toLocaleDateString()}</p>
+                  <p className="flex items-center gap-2"><Clock size={14} className="text-cyan-600" /> {new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} HRS</p>
+                  <p className="flex items-center gap-2"><Users size={14} className="text-cyan-600" /> {event.location} ({event.attendee_count}/{event.max_attendees})</p>
+                </div>
+                <Button 
+                  variant={isRegistered ? "outline" : "primary"} 
+                  className="w-full uppercase text-[10px] tracking-widest font-black"
+                  onClick={() => handleRegister(event.id)}
+                  disabled={isRegistered || (event.attendee_count >= event.max_attendees)}
+                >
+                  {isRegistered ? 'Deployment Confirmed' : event.attendee_count >= event.max_attendees ? 'Node Full' : 'Register Deployment'}
+                </Button>
+              </div>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
@@ -854,6 +924,21 @@ const ProjectsPage = () => {
       setNewProject({ title: '', description: '', tech_stack: '', lead_id: authState.user?.id || '' });
     } catch (err) {
       alert("Failed to initialize project");
+    }
+  };
+
+  const handleJoinProject = async (projectId: string) => {
+    if (!authState.user) return;
+    try {
+      const res = await fetch(`/api/projects/${projectId}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: authState.user.id })
+      });
+      const updatedProject = await res.json();
+      setProjects(projects.map(p => p.id === projectId ? updatedProject : p));
+    } catch (err) {
+      alert("Failed to join project node");
     }
   };
 
@@ -924,6 +1009,7 @@ const ProjectsPage = () => {
       <div className="grid md:grid-cols-2 gap-6">
         {projects.map((project) => {
           const lead = users.find(u => u.id === project.lead_id);
+          const isMember = project.members?.includes(authState.user?.id || '');
           return (
             <Card key={project.id} className="p-6 flex flex-col justify-between border-l-4 border-l-cyan-600">
               <div className="space-y-4">
@@ -942,22 +1028,33 @@ const ProjectsPage = () => {
                   ))}
                 </div>
               </div>
-              <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <img 
-                    src={lead?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(lead?.full_name || '')}`} 
-                    className="w-6 h-6 rounded border border-cyan-600"
-                    alt="Lead"
-                  />
-                  <div className="text-[10px] font-black uppercase tracking-widest font-mono">
-                    <p className="text-slate-400">Lead</p>
-                    <p className="text-navy-950 dark:text-white">{lead?.full_name}</p>
+              <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <img 
+                      src={lead?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(lead?.full_name || '')}`} 
+                      className="w-6 h-6 rounded border border-cyan-600"
+                      alt="Lead"
+                    />
+                    <div className="text-[10px] font-black uppercase tracking-widest font-mono">
+                      <p className="text-slate-400">Lead</p>
+                      <p className="text-navy-950 dark:text-white">{lead?.full_name}</p>
+                    </div>
+                  </div>
+                  <div className="text-right text-[10px] font-black uppercase tracking-widest font-mono">
+                    <p className="text-slate-400">Created</p>
+                    <p className="text-navy-950 dark:text-white">{project.created_at}</p>
                   </div>
                 </div>
-                <div className="text-right text-[10px] font-black uppercase tracking-widest font-mono">
-                  <p className="text-slate-400">Created</p>
-                  <p className="text-navy-950 dark:text-white">{project.created_at}</p>
-                </div>
+                <Button 
+                  variant={isMember ? "outline" : "primary"} 
+                  size="sm" 
+                  className="w-full text-[10px] uppercase tracking-widest font-black"
+                  onClick={() => handleJoinProject(project.id)}
+                  disabled={isMember}
+                >
+                  {isMember ? 'Assigned to Node' : 'Request Assignment'}
+                </Button>
               </div>
             </Card>
           );
@@ -968,6 +1065,7 @@ const ProjectsPage = () => {
 };
 
 const ChallengesPage = () => {
+  const { authState } = useAuth();
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -979,6 +1077,21 @@ const ChallengesPage = () => {
         setLoading(false);
       });
   }, []);
+
+  const handleAcceptChallenge = async (challengeId: string) => {
+    if (!authState.user) return;
+    try {
+      const res = await fetch(`/api/challenges/${challengeId}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: authState.user.id })
+      });
+      const updatedChallenge = await res.json();
+      setChallenges(challenges.map(c => c.id === challengeId ? updatedChallenge : c));
+    } catch (err) {
+      alert("Failed to accept mission");
+    }
+  };
 
   if (loading) return <div className="p-12 text-center font-mono animate-pulse">Loading Challenges...</div>;
 
@@ -993,30 +1106,44 @@ const ChallengesPage = () => {
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {challenges.map((challenge) => (
-          <Card key={challenge.id} className="p-6 flex flex-col justify-between hover:border-cyan-500 transition-all group">
-            <div className="space-y-4">
-              <div className="flex justify-between items-start">
-                <Badge variant={challenge.difficulty === 'hard' ? 'red' : challenge.difficulty === 'medium' ? 'gold' : 'cyan'}>
-                  {challenge.difficulty}
-                </Badge>
-                <div className="text-right">
-                  <p className="text-[10px] font-black text-slate-400 uppercase font-mono">Points</p>
-                  <p className="text-lg font-black text-navy-950 dark:text-white leading-none">{challenge.points}</p>
+        {challenges.map((challenge) => {
+          const isParticipating = challenge.participants?.includes(authState.user?.id || '');
+          return (
+            <Card key={challenge.id} className="p-6 flex flex-col justify-between hover:border-cyan-500 transition-all group">
+              <div className="space-y-4">
+                <div className="flex justify-between items-start">
+                  <Badge variant={challenge.difficulty === 'hard' ? 'red' : challenge.difficulty === 'medium' ? 'gold' : 'cyan'}>
+                    {challenge.difficulty}
+                  </Badge>
+                  <div className="text-right">
+                    <p className="text-[10px] font-black text-slate-400 uppercase font-mono">Points</p>
+                    <p className="text-lg font-black text-navy-950 dark:text-white leading-none">{challenge.points}</p>
+                  </div>
                 </div>
+                <h3 className="text-xl font-black text-navy-950 dark:text-white uppercase tracking-tight group-hover:text-cyan-600 transition-colors">{challenge.title}</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400 font-medium line-clamp-3">{challenge.description}</p>
               </div>
-              <h3 className="text-xl font-black text-navy-950 dark:text-white uppercase tracking-tight group-hover:text-cyan-600 transition-colors">{challenge.title}</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 font-medium line-clamp-3">{challenge.description}</p>
-            </div>
-            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <div className="text-[10px] font-black uppercase tracking-widest font-mono">
-                <p className="text-slate-400">Deadline</p>
-                <p className="text-navy-950 dark:text-white">{challenge.deadline}</p>
+              <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-[10px] font-black uppercase tracking-widest font-mono">
+                    <p className="text-slate-400">Deadline</p>
+                    <p className="text-navy-950 dark:text-white">{challenge.deadline}</p>
+                  </div>
+                  {isParticipating && <Badge variant="cyan">Active</Badge>}
+                </div>
+                <Button 
+                  size="sm" 
+                  variant={isParticipating ? "outline" : "primary"}
+                  className="text-[10px] font-black uppercase tracking-widest w-full"
+                  onClick={() => handleAcceptChallenge(challenge.id)}
+                  disabled={isParticipating}
+                >
+                  {isParticipating ? 'Mission in Progress' : 'Accept Mission'}
+                </Button>
               </div>
-              <Button size="sm" className="text-[10px] font-black uppercase tracking-widest">Accept Mission</Button>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
     </div>
   );
@@ -1084,6 +1211,16 @@ const ResourcesPage = () => {
       setNewResource({ title: '', description: '', category: 'Development', file_url: '', file_type: 'link' });
     } catch (err) {
       alert("Failed to inject resource");
+    }
+  };
+
+  const handleDeleteResource = async (resourceId: string) => {
+    if (!window.confirm("Terminate this resource from the library?")) return;
+    try {
+      await fetch(`/api/resources/${resourceId}`, { method: 'DELETE' });
+      setResources(resources.filter(r => r.id !== resourceId));
+    } catch (err) {
+      alert("Failed to terminate resource");
     }
   };
 
@@ -1204,7 +1341,17 @@ const ResourcesPage = () => {
                     {resource.file_type === 'pdf' ? <FileText size={20} /> : 
                      resource.file_type === 'video' ? <BookOpen size={20} /> : <ExternalLink size={20} />}
                   </div>
-                  <Badge variant="slate">{resource.category}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="slate">{resource.category}</Badge>
+                    {authState.user?.role === UserRole.ADMIN && (
+                      <button 
+                        onClick={() => handleDeleteResource(resource.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <h3 className="text-lg font-black text-navy-950 dark:text-white uppercase tracking-tight group-hover:text-cyan-600 transition-colors">{resource.title}</h3>
@@ -1304,8 +1451,18 @@ const AdminPanelPage = () => {
     });
   }, [users, searchTerm, startDate, endDate]);
 
-  const handleRoleChange = (userId: string, newRole: UserRole) => {
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+  const handleRoleChange = async (userId: string, newRole: UserRole) => {
+    try {
+      const res = await fetch(`/api/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole })
+      });
+      const updatedUser = await res.json();
+      setUsers(prev => prev.map(u => u.id === userId ? updatedUser : u));
+    } catch (err) {
+      alert("Failed to update clearance level");
+    }
   };
 
   const handleDeactivate = async (userId: string) => {
@@ -1715,10 +1872,16 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       }
     }, 1500);
   }, []);
-  const login = (email: string) => {
-    const user = MOCK_USERS.find(u => u.email === email) || MOCK_USERS[2];
-    localStorage.setItem('ict_club_user', JSON.stringify(user));
-    setAuthState({ ...authState, user });
+  const login = async (email: string) => {
+    try {
+      const res = await fetch('/api/users');
+      const users: UserProfile[] = await res.json();
+      const user = users.find(u => u.email === email) || users[2];
+      localStorage.setItem('ict_club_user', JSON.stringify(user));
+      setAuthState({ ...authState, user });
+    } catch (err) {
+      alert("System connection failed. Identity verification offline.");
+    }
   };
   const logout = () => {
     localStorage.removeItem('ict_club_user');
