@@ -8,12 +8,14 @@ export enum UserRole {
 export interface UserProfile {
   id: string;
   email: string;
+  username: string;
   full_name: string;
   role: UserRole;
   avatar_url?: string;
   bio?: string;
   skills: string[];
   joined_at: string;
+  rating?: number; // Average rating
 }
 
 export interface ClubEvent {
@@ -37,6 +39,25 @@ export interface Project {
   lead_id: string;
   created_at: string;
   members: string[]; // User IDs
+}
+
+export interface Challenge {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  points: number;
+  deadline: string;
+  created_at: string;
+  created_by: string;
+}
+
+export interface Rating {
+  user_id: string;
+  rating: number; // 1-5
+  comment?: string;
+  rated_by: string;
+  created_at: string;
 }
 
 export interface Resource {

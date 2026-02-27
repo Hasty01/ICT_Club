@@ -5,6 +5,7 @@ export const MOCK_USERS: UserProfile[] = [
   {
     id: '1',
     email: 'admin@ictclub.com',
+    username: 'alex_rivera',
     full_name: 'Alex Rivera',
     role: UserRole.ADMIN,
     avatar_url: 'https://picsum.photos/seed/admin/200',
@@ -15,6 +16,7 @@ export const MOCK_USERS: UserProfile[] = [
   {
     id: '2',
     email: 'sarah@ictclub.com',
+    username: 'sarah_chen',
     full_name: 'Sarah Chen',
     role: UserRole.BOARD,
     avatar_url: 'https://picsum.photos/seed/sarah/200',
@@ -25,6 +27,7 @@ export const MOCK_USERS: UserProfile[] = [
   {
     id: '3',
     email: 'member@ictclub.com',
+    username: 'jordan_smith',
     full_name: 'Jordan Smith',
     role: UserRole.MEMBER,
     avatar_url: 'https://picsum.photos/seed/jordan/200',
